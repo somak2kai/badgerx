@@ -1,7 +1,7 @@
 # badgerx
 
 [![CI](https://github.com/somak2kai/badgerx/actions/workflows/ci.yml/badge.svg)](https://github.com/somak2kai/badgerx/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/somak2kai/badgerx/badgerx.svg)](https://pkg.go.dev/github.com/somak2kai/badgerx/badgerx)
+[![Go Reference](https://pkg.go.dev/badge/github.com/somak2kai/badgerx.svg)](https://pkg.go.dev/github.com/somak2kai/badgerx)
 [![Go Report Card](https://goreportcard.com/badge/github.com/somak2kai/badgerx)](https://goreportcard.com/report/github.com/somak2kai/badgerx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -67,7 +67,7 @@ _ = xdb.View([]byte("user:1"), &got)
 ## Installation
 
 ```bash
-go get github.com/somak2kai/badgerx/badgerx
+go get github.com/somak2kai/badgerx
 ```
 
 Requires Go 1.23 or later.
@@ -84,7 +84,7 @@ import (
     "log"
 
     badger "github.com/dgraph-io/badger/v4"
-    "github.com/somak2kai/badgerx/badgerx"
+    "github.com/somak2kai/badgerx"
 )
 
 type User struct {
