@@ -61,6 +61,32 @@ var (
 	_ Compressor = (*DefaultNoOpCompressor)(nil)
 )
 
+// DecodeFunc is the function injected into each [IterFunc] call during
+// [BadgerXDb.IterateView]. Call it with a non-nil pointer to decode the
+// current item's value into your own variable:
+//
+//	fn := func(decode badgerx.DecodeFunc) error {
+//	    var u User
+//	    return decode(&u)
+//	}
+type DecodeFunc func(v any) error
+
+// IterFunc is the callback passed to [BadgerXDb.IterateView]. It is called
+// once per matching key. The provided [DecodeFunc] decodes the current item
+// only — create a fresh variable inside IterFunc on each call to avoid
+// overwriting previous results:
+//
+//	var results []User
+//	fn := func(decode badgerx.DecodeFunc) error {
+//	    var u User          // fresh every iteration
+//	    if err := decode(&u); err != nil {
+//	        return err
+//	    }
+//	    results = append(results, u)
+//	    return nil
+//	}
+type IterFunc func(decode DecodeFunc) error
+
 // Encoder is the strategy interface for serializing and deserializing values.
 //
 // Encode must convert v into a byte slice suitable for storage in badger.
@@ -200,6 +226,59 @@ func (d *BadgerXDb) View(key []byte, v any) error {
 			}
 			return d.encoder.Decode(val, v)
 		})
+	})
+}
+
+// IterateView iterates over all keys sharing the given prefix, calling fn
+// once per matching key. fn receives a [DecodeFunc] that decodes the current
+// item's value into any pointer the caller provides.
+//
+// opts controls iteration behaviour — use [badger.DefaultIteratorOptions] for
+// forward iteration, or customise for reverse iteration, keys-only mode, or
+// prefetch tuning:
+//
+//	// forward iteration (default)
+//	xdb.IterateView([]byte("user:"), badger.DefaultIteratorOptions, fn)
+//
+//	// reverse iteration
+//	opts := badger.DefaultIteratorOptions
+//	opts.Reverse = true
+//	xdb.IterateView([]byte("user:"), opts, fn)
+//
+// Create a fresh variable inside fn on each call — do not reuse a variable
+// declared outside, as it will be overwritten on every iteration:
+//
+//	var results []User
+//	err := xdb.IterateView([]byte("user:"), badger.DefaultIteratorOptions, func(decode badgerx.DecodeFunc) error {
+//	    var u User
+//	    if err := decode(&u); err != nil {
+//	        return err
+//	    }
+//	    results = append(results, u)
+//	    return nil
+//	})
+//
+// Returning a non-nil error from fn stops iteration and surfaces that error
+// as the return value of IterateView.
+func (d *BadgerXDb) IterateView(prefix []byte, opts badger.IteratorOptions, fn IterFunc) error {
+	return d.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+			if err := item.Value(func(val []byte) error {
+				val, err := d.compressor.Decompress(val)
+				if err != nil {
+					return err
+				}
+				return fn(func(v any) error {
+					return d.encoder.Decode(val, v)
+				})
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

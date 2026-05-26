@@ -118,6 +118,38 @@ func ExampleWithEncoder() {
 	// Output: somak 30
 }
 
+// ExampleBadgerXDb_IterateView demonstrates iterating over all keys sharing
+// a common prefix and collecting the decoded values into a slice.
+func ExampleBadgerXDb_IterateView() {
+	xdb := badgerx.NewBadgerXDb(openDB())
+	defer xdb.Close()
+
+	_ = xdb.Update([]byte("user:1"), User{Name: "alice", Age: 30})
+	_ = xdb.Update([]byte("user:2"), User{Name: "bob", Age: 25})
+	_ = xdb.Update([]byte("user:3"), User{Name: "carol", Age: 35})
+
+	var users []User
+	err := xdb.IterateView([]byte("user:"), badger.DefaultIteratorOptions, func(decode badgerx.DecodeFunc) error {
+		var u User
+		if err := decode(&u); err != nil {
+			return err
+		}
+		users = append(users, u)
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, u := range users {
+		fmt.Println(u.Name, u.Age)
+	}
+	// Output:
+	// alice 30
+	// bob 25
+	// carol 35
+}
+
 // ExampleGobEncoderDecoder_RegisterType demonstrates registering a concrete
 // type for structs that contain interface{} fields.
 func ExampleGobEncoderDecoder_RegisterType() {

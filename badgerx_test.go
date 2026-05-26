@@ -2,6 +2,7 @@ package badgerx
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -100,6 +101,147 @@ func TestUpdate_NilEncoder(t *testing.T) {
 	err := db.Update([]byte("key"), testRecord{Name: "test"})
 	if err == nil {
 		t.Fatal("expected error for nil encoder, got nil")
+	}
+}
+
+// TestIterateView_Basic verifies that all records stored under a prefix are
+// returned in order and correctly decoded into fresh variables each iteration.
+func TestIterateView_Basic(t *testing.T) {
+	db := NewBadgerXDb(openTestDB(t))
+
+	want := []testRecord{
+		{Name: "alice", Score: 1, Tags: []string{"a"}},
+		{Name: "bob", Score: 2, Tags: []string{"b"}},
+		{Name: "carol", Score: 3, Tags: []string{"c"}},
+	}
+
+	for i, r := range want {
+		key := []byte(fmt.Sprintf("user:%d", i))
+		if err := db.Update(key, r); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+	}
+
+	var got []testRecord
+	err := db.IterateView([]byte("user:"), badger.DefaultIteratorOptions, func(decode DecodeFunc) error {
+		var r testRecord
+		if err := decode(&r); err != nil {
+			return err
+		}
+		got = append(got, r)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("IterateView: %v", err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+}
+
+// TestIterateView_PrefixIsolation verifies that only keys matching the given
+// prefix are returned, not keys stored under a different prefix.
+func TestIterateView_PrefixIsolation(t *testing.T) {
+	db := NewBadgerXDb(openTestDB(t))
+
+	_ = db.Update([]byte("user:1"), testRecord{Name: "alice"})
+	_ = db.Update([]byte("user:2"), testRecord{Name: "bob"})
+	_ = db.Update([]byte("score:1"), testRecord{Name: "should-not-appear"})
+
+	var got []testRecord
+	err := db.IterateView([]byte("user:"), badger.DefaultIteratorOptions, func(decode DecodeFunc) error {
+		var r testRecord
+		if err := decode(&r); err != nil {
+			return err
+		}
+		got = append(got, r)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("IterateView: %v", err)
+	}
+
+	if len(got) != 2 {
+		t.Errorf("expected 2 results, got %d", len(got))
+	}
+	for _, r := range got {
+		if r.Name == "should-not-appear" {
+			t.Error("non-matching prefix key appeared in results")
+		}
+	}
+}
+
+// TestIterateView_NoMatch verifies that iterating a prefix with no matching
+// keys calls fn zero times and returns nil.
+func TestIterateView_NoMatch(t *testing.T) {
+	db := NewBadgerXDb(openTestDB(t))
+
+	_ = db.Update([]byte("user:1"), testRecord{Name: "alice"})
+
+	count := 0
+	err := db.IterateView([]byte("score:"), badger.DefaultIteratorOptions, func(decode DecodeFunc) error {
+		count++
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("IterateView: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected 0 calls, got %d", count)
+	}
+}
+
+// TestIterateView_CallbackError verifies that a non-nil error returned from fn
+// stops iteration and is surfaced as the return value of IterateView.
+func TestIterateView_CallbackError(t *testing.T) {
+	db := NewBadgerXDb(openTestDB(t))
+
+	_ = db.Update([]byte("user:1"), testRecord{Name: "alice"})
+	_ = db.Update([]byte("user:2"), testRecord{Name: "bob"})
+
+	sentinel := fmt.Errorf("stop here")
+	count := 0
+	err := db.IterateView([]byte("user:"), badger.DefaultIteratorOptions, func(decode DecodeFunc) error {
+		count++
+		return sentinel
+	})
+
+	if !errors.Is(err, sentinel) {
+		t.Errorf("expected sentinel error, got %v", err)
+	}
+	if count != 1 {
+		t.Errorf("expected fn called once before stopping, got %d", count)
+	}
+}
+
+// TestIterateView_FreshVariablePerIteration verifies that each call to fn
+// produces an independent value — not a shared pointer overwritten each loop.
+func TestIterateView_FreshVariablePerIteration(t *testing.T) {
+	db := NewBadgerXDb(openTestDB(t))
+
+	_ = db.Update([]byte("user:1"), testRecord{Name: "alice", Score: 1})
+	_ = db.Update([]byte("user:2"), testRecord{Name: "bob", Score: 2})
+
+	var ptrs []*testRecord
+	err := db.IterateView([]byte("user:"), badger.DefaultIteratorOptions, func(decode DecodeFunc) error {
+		var r testRecord
+		if err := decode(&r); err != nil {
+			return err
+		}
+		ptrs = append(ptrs, &r) // store pointer to local var
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("IterateView: %v", err)
+	}
+
+	if len(ptrs) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(ptrs))
+	}
+	// if v were shared both pointers would hold the last decoded value
+	if ptrs[0].Name == ptrs[1].Name {
+		t.Errorf("both pointers hold the same value — variable was shared across iterations")
 	}
 }
 

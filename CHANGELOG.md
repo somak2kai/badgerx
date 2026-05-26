@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `BadgerXDb.IterateView` now accepts a `badger.IteratorOptions` parameter, giving callers full control over iteration behaviour (reverse order, keys-only mode, prefetch tuning). Pass `badger.DefaultIteratorOptions` for standard forward iteration.
+
+---
+
+## [0.1.2] - 2026-05-26
+
+### Added
+
+- `DecodeFunc` — `func(v any) error` injected into each `IterFunc` call; decodes the current item's value into a caller-owned variable.
+- `IterFunc` — `func(decode DecodeFunc) error` callback type passed to `IterateView`. Returning a non-nil error stops iteration.
+- `BadgerXDb.IterateView` — iterates over all keys sharing a given prefix and invokes a callback for each, supplying a `DecodeFunc` to decode the current value. Safe for concurrent use; caller creates a fresh variable per iteration to avoid shared-pointer overwrites.
+
 ---
 
 ## [0.1.0] - 2026-05-26
@@ -28,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BadgerXDb.Update` — encodes and compresses a value then writes it to badger under the given key.
 - `BadgerXDb.View` — reads, decompresses, and decodes a value from badger into the given pointer.
 - `BadgerXDb.Close` — closes the compressor and the underlying badger DB, surfacing both errors via `errors.Join`.
-- CI pipeline via GitHub Actions testing against Go 1.22, 1.23, and 1.24 with race detection enabled.
+- CI pipeline via GitHub Actions testing against Go 1.23 and 1.24 with race detection and benchmark jobs.
 
-[Unreleased]: https://github.com/somak2kai/badgerx/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/somak2kai/badgerx/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/somak2kai/badgerx/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/somak2kai/badgerx/releases/tag/v0.1.0
