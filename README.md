@@ -1,7 +1,7 @@
 # badgerx
 
 [![CI](https://github.com/somak2kai/badgerx/actions/workflows/ci.yml/badge.svg)](https://github.com/somak2kai/badgerx/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/somak2kai/badgerx.svg)](https://pkg.go.dev/github.com/somak2kai/badgerx)
+[![Go Reference](https://pkg.go.dev/badge/github.com/somak2kai/badgerx?style=flat)](https://pkg.go.dev/github.com/somak2kai/badgerx)
 [![Go Report Card](https://goreportcard.com/badge/github.com/somak2kai/badgerx)](https://goreportcard.com/report/github.com/somak2kai/badgerx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
