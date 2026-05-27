@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.3] - 2026-05-27
+
+### Added
+
+- `TestCompressionRatios` — prints a table of encoded byte sizes and compression ratios for every encoder/compressor combination against a realistic struct (100 sessions, 200 audit log entries, nested address, map, timestamps). Run with `go test -v -run TestCompressionRatios`.
+- `BenchmarkRealWorld_Update` and `BenchmarkRealWorld_View` — real-world benchmarks using a representative application struct. Measures write and read throughput across all six encoder/compressor combinations. Run with `go test -bench=BenchmarkRealWorld -benchmem -benchtime=5s`.
+- `realisticUser`, `realisticSession`, `auditEntry` — internal benchmark fixtures modelling a user record with sessions, audit log, preferences map, and `time.Time` fields.
+
 ### Changed
 
 - `BadgerXDb.IterateView` now accepts a `badger.IteratorOptions` parameter, giving callers full control over iteration behaviour (reverse order, keys-only mode, prefetch tuning). Pass `badger.DefaultIteratorOptions` for standard forward iteration.
@@ -44,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BadgerXDb.Close` — closes the compressor and the underlying badger DB, surfacing both errors via `errors.Join`.
 - CI pipeline via GitHub Actions testing against Go 1.23 and 1.24 with race detection and benchmark jobs.
 
-[Unreleased]: https://github.com/somak2kai/badgerx/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/somak2kai/badgerx/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/somak2kai/badgerx/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/somak2kai/badgerx/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/somak2kai/badgerx/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/somak2kai/badgerx/releases/tag/v0.1.0
