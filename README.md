@@ -1,8 +1,8 @@
 # badgerx
 
 [![CI](https://github.com/somak2kai/badgerx/actions/workflows/ci.yml/badge.svg)](https://github.com/somak2kai/badgerx/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/somak2kai/badgerx?style=flat)](https://pkg.go.dev/github.com/somak2kai/badgerx)
-[![Go Report Card](https://goreportcard.com/badge/github.com/somak2kai/badgerx)](https://goreportcard.com/report/github.com/somak2kai/badgerx)
+[![Go Reference](https://pkg.go.dev/badge/github.com/somak2kai/badgerx)](https://pkg.go.dev/github.com/somak2kai/badgerx)
+[![Go Report Card](https://goreportcard.com/badge/github.com/somak2kai/badgerx?updated=1)](https://goreportcard.com/report/github.com/somak2kai/badgerx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **badgerx** is a thin, idiomatic Go wrapper around [BadgerDB](https://github.com/dgraph-io/badger) that abstracts away the repetitive encode/decode and compression boilerplate that every BadgerDB consumer ends up writing.
